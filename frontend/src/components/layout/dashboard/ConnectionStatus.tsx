@@ -1,20 +1,24 @@
+import { useEffect, useState } from "react";
+
 interface Props {
   isConnected: boolean;
 }
 
-const ConnectionStatus = ({ isConnected }: Props) => {
+const ConnectionStatus: React.FC<Props> = ({ isConnected }) => {
+  const [localConnected, setLocalConnected] = useState(isConnected);
+
+  useEffect(() => {
+    setLocalConnected(isConnected);
+  }, [isConnected]);
+
   return (
-    <div
-      className={`flex items-center gap-2 text-sm ${
-        isConnected ? "text-green-400" : "text-red-400"
-      }`}
-    >
-      <span
+    <div className="flex items-center gap-2 text-sm text-white">
+      <div
         className={`w-3 h-3 rounded-full ${
-          isConnected ? "bg-green-500 animate-pulse" : "bg-red-500"
+          localConnected ? "bg-green-400" : "bg-red-500"
         }`}
-      ></span>
-      {isConnected ? "Đang kết nối thiết bị" : "Mất kết nối thiết bị"}
+      ></div>
+      <span>{localConnected ? "Connected" : "Disconnected"}</span>
     </div>
   );
 };

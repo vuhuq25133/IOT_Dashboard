@@ -4,9 +4,13 @@ const ProfilePage = () => {
   return (
     <div className="flex flex-col sm:flex-row gap-8 text-gray-100">
       {/* LEFT: Profile Info */}
-      <div className="flex-1 bg-gray-900/70 border border-gray-800 rounded-2xl p-8 shadow-lg flex flex-col items-center justify-center">
-        <div className="w-50 h-50 bg-gradient-to-br from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-3xl font-bold">
-          VH
+      <div className="flex-1 bg-gray-800/70 border border-gray-800 rounded-2xl p-8 shadow-lg flex flex-col items-center justify-center">
+        <div className="w-50 h-50 rounded-full overflow-hidden border-2 border-indigo-500 shadow-md">
+          <img
+            src="/profile.jpg"
+            alt="User Profile"
+            className="w-full h-full object-cover"
+          />
         </div>
 
         <h2 className="text-2xl font-semibold mt-4">Vũ Mạnh Hùng</h2>
@@ -18,15 +22,17 @@ const ProfilePage = () => {
       {/* RIGHT: Introduction + Skills */}
       <div className="flex-[1.3] flex flex-col gap-6">
         {/* Intro */}
-        <div className="bg-gray-900/70 border border-gray-800 rounded-2xl p-6 shadow-lg">
+        <div className="bg-gray-800/70 border border-gray-800 rounded-2xl p-6 shadow-lg">
           <h3 className="text-xl font-semibold mb-2">Giới thiệu</h3>
           <p className="text-gray-400 leading-relaxed">
-            Tôi không ngừng tìm kiếm cơ hội để học hỏi và phát triển, đặc biệt trong các lĩnh vực công nghệ tiên tiến như IoT và ứng dụng web nhúng.
+            Tôi không ngừng tìm kiếm cơ hội để học hỏi và phát triển, đặc biệt
+            trong các lĩnh vực công nghệ tiên tiến như IoT và ứng dụng web
+            nhúng.
           </p>
 
           <div className="flex flex-wrap gap-3 mt-4">
             <a
-              href="https://github.com/VUHUQ2513/IOT_Dashboard"
+              href="https://github.com/VUHUQ25133/IOT_Dashboard"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 transition"
@@ -42,7 +48,7 @@ const ProfilePage = () => {
               API Docs
             </a>
             <a
-              href="https://example.com/report.pdf"
+              href="https://docs.google.com/document/d/1VPIXMLFpT0z8x_q3Z7DnAS8agSna1Y-cwj49YKBuoJs/edit?tab=t.0"
               target="_blank"
               rel="noopener noreferrer"
               className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 transition"
@@ -52,8 +58,8 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Skills */}
-        <div className="bg-gray-900/70 border border-gray-800 rounded-2xl p-6 shadow-lg">
+        {/* Tech Stack */}
+        <div className="bg-gray-800/70 border border-gray-800 rounded-2xl p-6 shadow-lg">
           <h3 className="text-xl font-semibold mb-3">Công nghệ</h3>
 
           <div className="space-y-3 text-gray-300">

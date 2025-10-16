@@ -105,6 +105,11 @@ void reconnect() {
       client.subscribe(topicFan);
       client.subscribe(topicAir);
       client.subscribe(topicLamp);
+
+      // ✅ Gửi lại trạng thái thiết bị hiện tại ngay sau khi kết nối thành công
+      client.publish("iot/fan/status", digitalRead(FAN_PIN) ? "on" : "off", true);
+      client.publish("iot/air/status", digitalRead(AIR_CONDITIONER) ? "on" : "off", true);
+      client.publish("iot/lamp/status", digitalRead(LAMP) ? "on" : "off", true);
     } else {
       Serial.print("❌ MQTT failed, rc=");
       Serial.println(client.state());

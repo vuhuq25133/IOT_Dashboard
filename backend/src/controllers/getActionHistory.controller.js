@@ -1,13 +1,13 @@
 import Action from "../models/actions.model.js";
 
-// Utilities to support flexible date/time keyword matching
 const escapeRegex = (s = "") => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const buildDateTimePatterns = (raw = "") => {
   const kw = raw.trim();
   if (!kw) return [];
   const patterns = [];
 
-  // time-only: h:mm, hh:mm, h:mm:ss, hh:mm:ss
+  // time-only (HH:mm or HH:mm:ss)
   if (kw.includes(":") && !kw.includes("/")) {
     const parts = kw.split(":").map((p) => escapeRegex(p));
     const hh = parts[0] ? `0?${parts[0]}` : "\\d{2}";
@@ -18,25 +18,25 @@ const buildDateTimePatterns = (raw = "") => {
     return patterns;
   }
 
-  // date-only: allow both D/M/Y and Y/M/D input
+  // date-only (yyyy/mm/dd or dd/mm/yyyy)
   if (kw.includes("/") && !kw.includes(":")) {
-    const segs = kw.split("/");
+    const segs = kw.split("/").map((s) => s.trim());
     if (segs.length === 3) {
-      const [a, b, c] = segs;
+      const [s1, s2, s3] = segs;
+      const isYearFirst = s1.length === 4 || Number(s1) > 31;
       const pad2 = (v) => (v.length === 1 ? `0${escapeRegex(v)}` : escapeRegex(v));
       const normYear = (y) => (y.length === 2 ? `20${escapeRegex(y)}` : escapeRegex(y));
-      const day = pad2(a);
-      const month = pad2(b);
-      const year = normYear(c);
-      patterns.push(`${year}/${month}/${day}`); // Y/M/D
-      patterns.push(`${day}/${month}/${year}`); // D/M/Y
+      const year = isYearFirst ? normYear(s1) : normYear(s3);
+      const month = pad2(s2);
+      const day = isYearFirst ? pad2(s3) : pad2(s1);
+      patterns.push(`${year}/${month}/${day}`);
       return patterns;
     }
     patterns.push(escapeRegex(kw));
     return patterns;
   }
 
-  // fallback substring
+  // fallback
   patterns.push(escapeRegex(kw));
   return patterns;
 };
@@ -48,22 +48,22 @@ export const getActionHistory = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const keyword = req.query.keyword?.trim() || "";
-    const searchBy = req.query.searchBy || "all"; // all | device | state | date
-    const sortBy = req.query.sortBy || "timestamp"; // timestamp | device | newState
+    const sortBy = req.query.sortBy || "timestamp";
     const typeSort = req.query.typeSort === "asc" ? 1 : -1;
-    const deviceFilter = (req.query.device || "all").toString(); // all | lamp | fan | air
-    const stateFilter = (req.query.state || "all").toString(); // all | on | off
+    const deviceFilter = (req.query.device || "all").toString();
+    const stateFilter = (req.query.state || "all").toString();
 
-    // Date/time search via aggregation (substring on formatted string)
-    if (keyword && (searchBy === "date" || searchBy === "all")) {
+    const match = {};
+    if (deviceFilter !== "all") match.device = deviceFilter;
+    if (stateFilter !== "all") match.newState = stateFilter;
+
+    // 🔍 Nếu có từ khóa (tìm theo ngày / giờ)
+    if (keyword) {
       const patterns = buildDateTimePatterns(keyword);
       const orConds = [];
-      const andConds = [];
-      if (deviceFilter !== "all") andConds.push({ device: deviceFilter });
-      if (stateFilter !== "all") andConds.push({ newState: stateFilter });
+
       for (const p of patterns) {
-        for (const field of ["timestamp"]) {
-          // yyyy/mm/dd hh:mm:ss
+        for (const field of ["timestamp", "createdAt"]) {
           orConds.push({
             $expr: {
               $regexMatch: {
@@ -79,80 +79,36 @@ export const getActionHistory = async (req, res) => {
               },
             },
           });
-          // dd/mm/yyyy hh:mm:ss (để người dùng quen dd/mm/yyyy vẫn tìm được)
-          orConds.push({
-            $expr: {
-              $regexMatch: {
-                input: {
-                  $dateToString: {
-                    format: "%d/%m/%Y %H:%M:%S",
-                    date: `$${field}`,
-                    timezone: "+07:00",
-                  },
-                },
-                regex: p,
-                options: "i",
-              },
-            },
-          });
         }
       }
 
-      const matchStage = {
-        $match: andConds.length
-          ? { $and: [...andConds, { $or: orConds }] }
-          : { $or: orConds },
-      };
-
-      const pipeline = [
-        matchStage,
-        { $sort: { [sortBy]: typeSort } },
-        { $skip: skip },
-        { $limit: limit },
-      ];
-
-      const countPipeline = [matchStage, { $count: "count" }];
-
-      const [actions, countResult] = await Promise.all([
-        Action.aggregate(pipeline),
-        Action.aggregate(countPipeline),
-      ]);
-
-      const totalActions = countResult?.[0]?.count || 0;
-      return res.status(200).json({
-        totalActions,
-        totalPages: Math.ceil(totalActions / limit) || 1,
-        currentPage: page,
-        actions,
-      });
+      match.$or = orConds;
     }
 
-    // Device or state search (case-insensitive substring)
-    const query = {};
-    // independent dropdown filters
-    if (deviceFilter !== "all") query.device = deviceFilter;
-    if (stateFilter !== "all") query.newState = stateFilter;
-    // optional text search on device/state when searchBy specified
-    if (keyword && searchBy === "device") {
-      query.device = { $regex: escapeRegex(keyword), $options: "i" };
-    } else if (keyword && searchBy === "state") {
-      query.newState = { $regex: escapeRegex(keyword), $options: "i" };
-    }
+    const pipeline = [
+      { $match: match },
+      { $sort: { [sortBy]: typeSort } },
+      { $skip: skip },
+      { $limit: limit },
+    ];
 
-    const actions = await Action.find(query)
-      .sort({ [sortBy]: typeSort })
-      .skip(skip)
-      .limit(limit);
+    const countPipeline = [{ $match: match }, { $count: "count" }];
 
-    const totalActions = await Action.countDocuments(query);
-    return res.status(200).json({
+    const [actions, countResult] = await Promise.all([
+      Action.aggregate(pipeline),
+      Action.aggregate(countPipeline),
+    ]);
+
+    const totalActions = countResult?.[0]?.count || 0;
+
+    res.status(200).json({
       totalActions,
       totalPages: Math.ceil(totalActions / limit) || 1,
       currentPage: page,
       actions,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Internal server error." });
+    console.error("❌ getActionHistory error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 };

@@ -9,16 +9,14 @@ export default function Sidebar() {
     { path: "/profile", label: "Profile", icon: <User size={20} /> },
   ];
 
-
-
   return (
     <div className="flex flex-col h-full p-4">
       {/* User Info */}
       <div className="flex items-center gap-3 mb-8">
         <img
-          src="https://i.pravatar.cc/80?img=12"
-          alt="Avatar"
-          className="w-12 h-12 rounded-full border-2 border-gray-400"
+          src="/profile.jpg"
+          alt="User Profile"
+          className="w-12 h-12 rounded-full border-2 border-gray-800 object-cover"
         />
         <div>
           <p className="font-semibold text-white">Vũ Mạnh Hùng</p>

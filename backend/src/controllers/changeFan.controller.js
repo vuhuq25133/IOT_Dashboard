@@ -1,54 +1,43 @@
 import mqttClient from "../mqtt/mqttClient.js";
 import Action from "../models/actions.model.js";
+import DeviceState from "../models/deviceState.model.js";
 
-const changeFan = (req, res) => {
-  const state = (req.body?.state || "").toString().trim().toLowerCase();
-  if (state !== "on" && state !== "off") {
-    return res.status(400).json({ message: "Invalid state" });
+const changeFan = async (req, res) => {
+  try {
+    const { state } = req.body;
+    if (!["on", "off"].includes(state))
+      return res.status(400).json({ message: "Invalid state" });
+
+    // Lấy trạng thái trước đó
+    const prev = await DeviceState.findOne({ device: "fan" });
+    const previousState = prev ? prev.state : "off";
+
+    // Cập nhật trạng thái mới
+    await DeviceState.findOneAndUpdate(
+      { device: "fan" },
+      { state },
+      { upsert: true, new: true }
+    );
+
+    // Lưu vào Action History
+    await Action.create({
+      device: "fan",
+      action: "toggle",
+      previousState,
+      newState: state,
+      status: "success",
+      triggeredBy: "user",
+    });
+
+    // Gửi MQTT
+    mqttClient.publish("iot/fan", state);
+    console.log(`📤 Toggle fan: ${state}`);
+
+    res.status(200).json({ fanState: state });
+  } catch (err) {
+    console.error("❌ changeFan error:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
-
-  const statusTopic = "iot/fan/status";
-  const mqttResponseHandler = async (topic, message) => {
-    if (topic !== statusTopic) return;
-    const status = message.toString().trim().toLowerCase();
-    console.log(`Received Fan status: ${status}`);
-    mqttClient.removeListener("message", mqttResponseHandler);
-
-    if (status === state) {
-      try {
-        await Action.create({
-          device: "fan",
-          action: state === "on" ? "turn_on" : "turn_off",
-          newState: state,
-          status: "success",
-          triggeredBy: "user",
-          timestamp: new Date(),
-        });
-      } catch (e) {
-        console.error("Save action (fan) error:", e);
-      }
-      return res.status(200).json({ fanState: state });
-    } else {
-      try {
-        await Action.create({
-          device: "fan",
-          action: state === "on" ? "turn_on" : "turn_off",
-          newState: status,
-          status: "failed",
-          errorMessage: `Expected '${state}', got '${status}'`,
-          triggeredBy: "user",
-          timestamp: new Date(),
-        });
-      } catch (e) {
-        console.error("Save action (fan) error:", e);
-      }
-      return res.status(500).json({ message: "Failed to change Fan state" });
-    }
-  };
-
-  mqttClient.on("message", mqttResponseHandler);
-  mqttClient.publish("iot/fan", state);
-  console.log("Sent fan");
 };
 
 export default changeFan;

@@ -6,7 +6,7 @@ import changeLamp from "../controllers/changeLamp.controller.js";
 import { getLatestSensors } from "../controllers/latestSensors.controller.js";
 import { getActionHistory } from "../controllers/getActionHistory.controller.js";
 import { getAllSenSors } from "../controllers/getAllSensors.controller.js";
-
+import { getDeviceState } from "../controllers/getDeviceState.controller.js";
 const router = express.Router();
 
 /**
@@ -238,4 +238,6 @@ router.post("/lamp/status", changeLamp);
  */
 router.get("/action-history", getActionHistory);
 
+
+router.get("/devices/state", getDeviceState);
 export default router;
