@@ -1,0 +1,100 @@
+﻿@base = http://localhost:5000/api/main
+
+### ==================== FAN ====================
+# Bật quạt
+POST {{base}}/fan/status
+Content-Type: application/json
+
+{
+  "state": "on"
+}
+
+###
+# Tắt quạt
+POST {{base}}/fan/status
+Content-Type: application/json
+
+{
+  "state": "off"
+}
+
+
+### ==================== AIR ====================
+# Bật điều hoà
+POST {{base}}/air/status
+Content-Type: application/json
+
+{
+  "state": "on"
+}
+
+###
+# Tắt điều hoà
+POST {{base}}/air/status
+Content-Type: application/json
+
+{
+  "state": "off"
+}
+
+
+### ==================== LAMP ====================
+# Bật đèn
+POST {{base}}/lamp/status
+Content-Type: application/json
+
+{
+  "state": "on"
+}
+
+###
+# Tắt đèn
+POST {{base}}/lamp/status
+Content-Type: application/json
+
+{
+  "state": "off"
+}
+
+
+### ==================== LATEST SENSORS ====================
+# Lấy 10 bản ghi cảm biến mới nhất
+GET {{base}}/latest-sensors
+
+
+### ==================== ACTION HISTORY ====================
+# Lấy lịch sử hành động (phân trang)
+GET {{base}}/action-history?page=1&limit=10
+
+###
+# Lọc theo ngày/giờ (yyyy/mm/dd hh:mm:ss hoặc dd/mm/yyyy hh:mm:ss)
+GET {{base}}/action-history?page=1&limit=10&keyword=2025/10/10%2014:34&searchBy=date
+
+###
+# Kết hợp bộ lọc Thiết bị + Trạng thái + thời gian
+GET {{base}}/action-history?page=1&limit=10&device=lamp&state=on&keyword=14:34&searchBy=all
+
+
+### ==================== ALL SENSOR DATA ====================
+# Lấy toàn bộ dữ liệu cảm biến (phân trang)
+GET {{base}}/sensors?page=1&limit=10
+
+###
+# Tìm theo ngày (toàn ngày) - cho phép dd/mm/yyyy hoặc yyyy/mm/dd
+GET {{base}}/sensors?searchBy=date&keyword=10/10/2025
+
+###
+# Tìm theo giờ (ví dụ 14h)
+GET {{base}}/sensors?searchBy=date&keyword=14
+
+###
+# Tìm theo phút (14:34)
+GET {{base}}/sensors?searchBy=date&keyword=14:34
+
+###
+# Tìm theo thời gian đầy đủ
+GET {{base}}/sensors?searchBy=date&keyword=2025/10/13%2014:34:19
+
+###
+# Sắp xếp theo nhiệt độ tăng dần
+GET {{base}}/sensors?sortBy=temperature&typeSort=asc
