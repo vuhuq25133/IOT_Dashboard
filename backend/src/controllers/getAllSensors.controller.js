@@ -1,15 +1,5 @@
 import Sensor from "../models/sensors.model.js";
 
-const changeTimezone = (datStr) => {
-  const dateRegex = /^\d{4}\/\d{2}\/\d{2} \d{2}:\d{2}:\d{2}$/;
-  if (!dateRegex.test(datStr)) return null;
-
-  const [date, time] = datStr.split(" ");
-  const [year, month, day] = date.split("/").map(Number);
-  const [hour, minute, second] = time.split(":").map(Number);
-  return new Date(Date.UTC(year, month - 1, day, hour - 7, minute, second));
-};
-
 const escapeRegex = (s = "") => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const buildDateTimePatterns = (raw = "") => {
   const kw = raw.trim();
@@ -57,14 +47,81 @@ export const getAllSenSors = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const keyword = req.query.keyword?.trim() || "";
+    const keyword = req.query.keyword ?.trim() || "";
     const searchBy = req.query.searchBy || "all";
     const sortBy = req.query.sortBy || "timestamp";
     const typeSort = req.query.typeSort === "asc" ? 1 : -1;
 
     const query = {};
 
-    if (keyword && (searchBy === "date" || searchBy === "all")) {
+    if (keyword && searchBy === "all") {
+      const numVal = parseFloat(keyword);
+      const orConds = [];
+
+      // Nếu keyword là số => tìm trong các cột numeric
+      if (!isNaN(numVal)) {
+        for (const field of ["temperature", "humidity", "light"]) {
+          orConds.push({
+            [field]: numVal
+          });
+        }
+      }
+      // Tìm theo thời gian (regex như searchBy=date)
+      const patterns = buildDateTimePatterns(keyword);
+      for (const p of patterns) {
+        orConds.push({
+          $expr: {
+            $regexMatch: {
+              input: {
+                $dateToString: {
+                  format: "%Y/%m/%d %H:%M:%S",
+                  date: "$timestamp",
+                  timezone: "+07:00",
+                },
+              },
+              regex: p,
+              options: "i",
+            },
+          },
+        });
+      }
+
+      const matchStage = {
+        $match: {
+          $or: orConds
+        }
+      };
+      const pipeline = [
+        matchStage,
+        {
+          $sort: {
+            [sortBy]: typeSort
+          }
+        },
+        {
+          $skip: skip
+        },
+        {
+          $limit: limit
+        },
+      ];
+      const countPipeline = [matchStage, {
+        $count: "count"
+      }];
+
+      const [sensors, countResult] = await Promise.all([
+        Sensor.aggregate(pipeline),
+        Sensor.aggregate(countPipeline),
+      ]);
+      const total = countResult?.[0]?.count || 0;
+      return res.status(200).json({
+        currentPage: page,
+        totalPages: Math.ceil(total / limit) || 1,
+        totalResults: total,
+        results: sensors,
+      });
+    }
+    else if (keyword && (searchBy === "date")) {
       // Cho phép tìm theo substring theo chuẩn hiển thị "yyyy/mm/dd hh:mm:ss"
       const patterns = buildDateTimePatterns(keyword);
 
@@ -98,12 +155,22 @@ export const getAllSenSors = async (req, res) => {
 
       const pipeline = [
         matchStage,
-        { $sort: { [sortBy]: typeSort } },
-        { $skip: skip },
-        { $limit: limit },
+        {
+          $sort: {
+            [sortBy]: typeSort
+          }
+        },
+        {
+          $skip: skip
+        },
+        {
+          $limit: limit
+        },
       ];
 
-      const countPipeline = [matchStage, { $count: "count" }];
+      const countPipeline = [matchStage, {
+        $count: "count"
+      }];
 
       const [sensors, countResult] = await Promise.all([
         Sensor.aggregate(pipeline),
@@ -118,28 +185,20 @@ export const getAllSenSors = async (req, res) => {
         totalResults: total,
         results: sensors,
       });
-    } else {
+    }
+    else {
       if (keyword && ["temperature", "humidity", "light"].includes(searchBy)) {
         const numVal = parseFloat(keyword);
         if (!isNaN(numVal)) query[searchBy] = numVal;
         else query[searchBy] = null;
-      } else if (
-        keyword &&
-        !("all" === searchBy || "date" === searchBy || ["temperature", "humidity", "light"].includes(searchBy))
-      ) {
+      } else if (keyword && !("all" === searchBy || "date" === searchBy || ["temperature", "humidity", "light"].includes(searchBy))) {
         return res.status(400).json({
-          error:
-            "Tham so khong hop le. searchBy phai la all, temperature, humidity, light, date",
+          error: "Tham so khong hop le. searchBy phai la all, temperature, humidity, light, date",
         });
       }
 
-      const sensors = await Sensor.find(query)
-        .sort({ [sortBy]: typeSort })
-        .skip(skip)
-        .limit(limit);
-
+      const sensors = await Sensor.find(query).sort({[sortBy]: typeSort}).skip(skip).limit(limit);
       const total = await Sensor.countDocuments(query);
-
       return res.status(200).json({
         currentPage: page,
         totalPages: Math.ceil(total / limit) || 1,
@@ -149,6 +208,8 @@ export const getAllSenSors = async (req, res) => {
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({
+      error: "Server error"
+    });
   }
 };
