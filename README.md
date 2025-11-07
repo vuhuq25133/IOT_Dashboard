@@ -47,7 +47,7 @@ IOT_Dashboard/
 
 ### 1️⃣ Embedded Code (ESP8266)
 
-1. Cài **Arduino IDE** và các thư viện trong thư mục `embedded/lib`.
+1. Cài **Arduino IDE** và các thư viện cần thiết cho code nạp.
 2. Mở file `sketch_aug18a.ino` → nạp vào board NodeMCU ESP8266.
 3. Cấu hình WiFi và MQTT broker trong file:
 
@@ -56,7 +56,7 @@ IOT_Dashboard/
    const char* mqtt_username = "iotuser";
    const char* mqtt_password = "iotpass";
    ```
-4. Sau khi upload, ESP8266 sẽ gửi dữ liệu cảm biến mỗi 2s đến topic `sensor/datas`.
+4. Sau khi nạp thành công, ESP8266 sẽ gửi dữ liệu cảm biến mỗi 2s đến topic `sensor/datas`.
 
 ---
 
