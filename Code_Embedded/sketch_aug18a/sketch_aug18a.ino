@@ -12,8 +12,8 @@
 #define LAMP D7
 #define FAN_PIN D6
 #define AIR_CONDITIONER D5
-#define SDA_PIN D2
-#define SCL_PIN D1
+#define SDA_PIN D3
+#define SCL_PIN D2
 
 // ====== SENSOR OBJECTS ======
 DHT dht(DHTPIN, DHTTYPE);
@@ -122,7 +122,7 @@ void readSensorsAndPublish() {
   float humidity = dht.readHumidity();
   float temperature = dht.readTemperature();
   float lux = lightMeter.readLightLevel();
-
+  if (lux < 0) lux = 0; // trường hợp gửi -2 lên server do lỗi cảm biến
   if (isnan(humidity) || isnan(temperature) || isnan(lux)) {
     Serial.println("⚠️ Sensor read error!");
     return;

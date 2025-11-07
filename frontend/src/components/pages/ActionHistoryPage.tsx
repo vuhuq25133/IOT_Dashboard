@@ -193,21 +193,15 @@ const ActionHistoryPage: React.FC = () => {
                 </tr>
               ) : (
                 data.map((item, i) => (
-                  <tr
-                    key={item._id}
-                    className="text-center border-b border-gray-700 hover:bg-gray-700 transition"
-                  >
+                  <tr key={item._id} className="text-center border-b border-gray-700 hover:bg-gray-700 transition">
                     <td className="p-2">{(page - 1) * limit + i + 1}</td>
                     <td className="p-2">
-                      {item.device === "fan"
-                        ? "Quạt"
-                        : item.device === "air"
-                        ? "Điều hòa"
-                        : item.device === "lamp"
-                        ? "Đèn"
-                        : item.device}
+                      { item.device === "fan" ? "Quạt"
+                      : item.device === "air" ? "Điều hòa"
+                      : item.device === "lamp" ? "Đèn"
+                      : item.device
+                      }
                     </td>
-
                     <td className="p-2 uppercase">{item.newState}</td>
                     <td className="p-2">
                       {formatDateTime(item.timestamp || item.createdAt)}

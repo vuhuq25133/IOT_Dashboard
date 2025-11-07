@@ -9,7 +9,7 @@ export default function Header() {
           href="http://localhost:5000/api-docs"
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 py-2 text-sm font-medium text-white hover:bg-blue-50 rounded-lg border border-blue-200 transition"
+          className="px-4 py-2 text-sm font-medium text-white hover:bg-pink-500 rounded-lg border border-pink-500 transition"
         >
           API Docs
         </a>
@@ -17,7 +17,7 @@ export default function Header() {
           href="https://github.com/VUHUQ25133/IOT_Dashboard"
           target="_blank"
           rel="noopener noreferrer"
-          className="px-4 py-2 text-sm font-medium text-white hover:bg-gray-100 rounded-lg border border-gray-300 transition"
+          className="px-4 py-2 text-sm font-medium text-white hover:bg-pink-500 rounded-lg border border-pink-500 transition"
         >
           GitHub
         </a>

@@ -47,138 +47,53 @@ export const getAllSenSors = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    const keyword = req.query.keyword ?.trim() || "";
+    const keyword = req.query.keyword?.trim() || "";
     const searchBy = req.query.searchBy || "all";
     const sortBy = req.query.sortBy || "timestamp";
     const typeSort = req.query.typeSort === "asc" ? 1 : -1;
 
-    const query = {};
-
+    // === 1️⃣ searchBy = "all" ===
     if (keyword && searchBy === "all") {
+      const [datePart, valuePart] = await Promise.all([
+        searchByDate(keyword, sortBy, typeSort, skip, limit),
+        searchByValue(keyword, sortBy, typeSort, skip, limit),
+      ]);
+      // Kết hợp và loại trùng
+      const merged = [
+        ...datePart.sensors,
+        ...valuePart.sensors.filter((v) => !datePart.sensors.some((d) => d._id.toString() === v._id.toString())),
+      ];
+
+      const total = datePart.total + valuePart.total;
+      return res.status(200).json({
+        currentPage: page,
+        totalPages: Math.ceil(total / limit) || 1,
+        totalResults: total,
+        results: merged,
+      });
+    }
+
+    // === 2️⃣ searchBy = "date" ===
+    if (keyword && searchBy === "date") {
+      const { sensors, total } = await searchByDate(keyword, sortBy, typeSort, skip, limit);
+      return res.status(200).json({
+        currentPage: page,
+        totalPages: Math.ceil(total / limit) || 1,
+        totalResults: total,
+        results: sensors,
+      });
+    }
+
+    // === 3️⃣ searchBy = temperature / humidity / light ===
+    if (keyword && ["temperature", "humidity", "light"].includes(searchBy)) {
       const numVal = parseFloat(keyword);
-      const orConds = [];
+      const query = isNaN(numVal) ? {} : { [searchBy]: numVal };
 
-      // Nếu keyword là số => tìm trong các cột numeric
-      if (!isNaN(numVal)) {
-        for (const field of ["temperature", "humidity", "light"]) {
-          orConds.push({
-            [field]: numVal
-          });
-        }
-      }
-      // Tìm theo thời gian (regex như searchBy=date)
-      const patterns = buildDateTimePatterns(keyword);
-      for (const p of patterns) {
-        orConds.push({
-          $expr: {
-            $regexMatch: {
-              input: {
-                $dateToString: {
-                  format: "%Y/%m/%d %H:%M:%S",
-                  date: "$timestamp",
-                  timezone: "+07:00",
-                },
-              },
-              regex: p,
-              options: "i",
-            },
-          },
-        });
-      }
-
-      const matchStage = {
-        $match: {
-          $or: orConds
-        }
-      };
-      const pipeline = [
-        matchStage,
-        {
-          $sort: {
-            [sortBy]: typeSort
-          }
-        },
-        {
-          $skip: skip
-        },
-        {
-          $limit: limit
-        },
-      ];
-      const countPipeline = [matchStage, {
-        $count: "count"
-      }];
-
-      const [sensors, countResult] = await Promise.all([
-        Sensor.aggregate(pipeline),
-        Sensor.aggregate(countPipeline),
-      ]);
-      const total = countResult?.[0]?.count || 0;
-      return res.status(200).json({
-        currentPage: page,
-        totalPages: Math.ceil(total / limit) || 1,
-        totalResults: total,
-        results: sensors,
-      });
-    }
-    else if (keyword && (searchBy === "date")) {
-      // Cho phép tìm theo substring theo chuẩn hiển thị "yyyy/mm/dd hh:mm:ss"
-      const patterns = buildDateTimePatterns(keyword);
-
-      const orConds = [];
-      for (const p of patterns) {
-        for (const field of ["timestamp"]) {
-          // so khớp theo chuẩn Y/M/D
-          orConds.push({
-            $expr: {
-              $regexMatch: {
-                input: {
-                  $dateToString: {
-                    format: "%Y/%m/%d %H:%M:%S",
-                    date: `$${field}`,
-                    timezone: "+07:00",
-                  },
-                },
-                regex: p,
-                options: "i",
-              },
-            },
-          });
-        }
-      }
-
-      const matchStage = {
-        $match: {
-          $or: orConds,
-        },
-      };
-
-      const pipeline = [
-        matchStage,
-        {
-          $sort: {
-            [sortBy]: typeSort
-          }
-        },
-        {
-          $skip: skip
-        },
-        {
-          $limit: limit
-        },
-      ];
-
-      const countPipeline = [matchStage, {
-        $count: "count"
-      }];
-
-      const [sensors, countResult] = await Promise.all([
-        Sensor.aggregate(pipeline),
-        Sensor.aggregate(countPipeline),
+      const [sensors, total] = await Promise.all([
+        Sensor.find(query).sort({ [sortBy]: typeSort }).skip(skip).limit(limit),
+        Sensor.countDocuments(query),
       ]);
 
-      const total = countResult?.[0]?.count || 0;
-
       return res.status(200).json({
         currentPage: page,
         totalPages: Math.ceil(total / limit) || 1,
@@ -186,30 +101,87 @@ export const getAllSenSors = async (req, res) => {
         results: sensors,
       });
     }
-    else {
-      if (keyword && ["temperature", "humidity", "light"].includes(searchBy)) {
-        const numVal = parseFloat(keyword);
-        if (!isNaN(numVal)) query[searchBy] = numVal;
-        else query[searchBy] = null;
-      } else if (keyword && !("all" === searchBy || "date" === searchBy || ["temperature", "humidity", "light"].includes(searchBy))) {
-        return res.status(400).json({
-          error: "Tham so khong hop le. searchBy phai la all, temperature, humidity, light, date",
-        });
-      }
 
-      const sensors = await Sensor.find(query).sort({[sortBy]: typeSort}).skip(skip).limit(limit);
-      const total = await Sensor.countDocuments(query);
-      return res.status(200).json({
-        currentPage: page,
-        totalPages: Math.ceil(total / limit) || 1,
-        totalResults: total,
-        results: sensors,
-      });
-    }
-  } catch (error) {
+    // === 4️⃣ Trường hợp không keyword: lấy toàn bộ ===
+    const sensors = await Sensor.find().sort({ [sortBy]: typeSort }).skip(skip).limit(limit);
+    const total = await Sensor.countDocuments();
+    res.status(200).json({
+      currentPage: page,
+      totalPages: Math.ceil(total / limit) || 1,
+      totalResults: total,
+      results: sensors,
+    });
+  }
+  catch (error) {
     console.error(error);
     res.status(500).json({
       error: "Server error"
     });
   }
 };
+
+// ====================================================
+// 🔹 HÀM CON: TÌM THEO THỜI GIAN (DATE/TIME)
+// ====================================================
+async function searchByDate(keyword, sortBy, typeSort, skip, limit) {
+  const patterns = buildDateTimePatterns(keyword);
+  const orConds = [];
+
+  for (const p of patterns) {
+    orConds.push({
+      $expr: {
+        $regexMatch: {
+          input: {
+            $dateToString: {
+              format: "%Y/%m/%d %H:%M:%S",
+              date: "$timestamp",
+              timezone: "+07:00",
+            },
+          },
+          regex: p,
+          options: "i",
+        },
+      },
+    });
+  }
+
+  const matchStage = { $match: { $or: orConds } };
+  const pipeline = [
+    matchStage,
+    { $sort: { [sortBy]: typeSort } },
+    { $skip: skip },
+    { $limit: limit },
+  ];
+  const countPipeline = [matchStage, { $count: "count" }];
+
+  const [sensors, countResult] = await Promise.all([
+    Sensor.aggregate(pipeline),
+    Sensor.aggregate(countPipeline),
+  ]);
+  const total = countResult?.[0]?.count || 0;
+
+  return { sensors, total };
+}
+
+// ====================================================
+// 🔹 HÀM CON: TÌM THEO GIÁ TRỊ CẢM BIẾN (TEMP/HUMID/LIGHT)
+// ====================================================
+async function searchByValue(keyword, sortBy, typeSort, skip, limit) {
+  const numVal = parseFloat(keyword);
+  if (isNaN(numVal)) return { sensors: [], total: 0 };
+
+  const query = {
+    $or: [
+      { temperature: numVal },
+      { humidity: numVal },
+      { light: numVal },
+    ],
+  };
+
+  const [sensors, total] = await Promise.all([
+    Sensor.find(query).sort({ [sortBy]: typeSort }).skip(skip).limit(limit),
+    Sensor.countDocuments(query),
+  ]);
+
+  return { sensors, total };
+}

@@ -35,7 +35,7 @@ const ProfilePage = () => {
               href="https://github.com/VUHUQ25133/IOT_Dashboard"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-700 transition"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-blue-600 hover:bg-blue-900 transition"
             >
               GitHub
             </a>
@@ -43,7 +43,7 @@ const ProfilePage = () => {
               href="http://localhost:5000/api-docs"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-700 hover:bg-gray-600 transition"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-gray-700 hover:bg-gray-500 transition"
             >
               API Docs
             </a>
@@ -51,7 +51,7 @@ const ProfilePage = () => {
               href="https://docs.google.com/document/d/1VPIXMLFpT0z8x_q3Z7DnAS8agSna1Y-cwj49YKBuoJs/edit?tab=t.0"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 hover:bg-indigo-700 transition"
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-indigo-600 hover:bg-indigo-900 transition"
             >
               Báo cáo
             </a>

@@ -77,17 +77,9 @@ const DeviceControls = ({ isConnected, devices, socket }: Props) => {
                           ? "bg-blue-600 text-white hover:bg-blue-500"
                           : "bg-gray-700 text-gray-300 hover:bg-gray-600"
                       }
-                      ${isDisabled ? "opacity-50 cursor-not-allowed" : ""}`}
+                      ${isDisabled ? "bg-gray-700 opacity-50 cursor-not-allowed" : ""}`}
                   >
-                    {loading[key]
-                      ? "..."
-                      : !isConnected
-                      ? "Mất kết nối"
-                      : state
-                      ? state === "on"
-                        ? "ON"
-                        : "OFF"
-                      : "--"}
+                    {loading[key] ? "Loading..." : !isConnected ? "Disconnected" : state ? state === "on" ? "ON" : "OFF" : "--"}
                   </button>
                 </td>
               </tr>

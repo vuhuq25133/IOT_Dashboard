@@ -42,11 +42,7 @@ const SensorChart = ({ sensorData }: Props) => {
   const chartRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstance = useRef<Chart | null>(null);
 
-  const [visible, setVisible] = useState({
-    temp: true,
-    humid: true,
-    light: true,
-  });
+  const [visible, setVisible] = useState({ temp: true, humid: true, light: true });
 
   const [dataHistory, setDataHistory] = useState<
     {
@@ -61,9 +57,7 @@ const SensorChart = ({ sensorData }: Props) => {
   useEffect(() => {
     (async () => {
       try {
-        const res = await fetch(
-          "http://localhost:5000/api/main/latest-sensors"
-        );
+        const res = await fetch("http://localhost:5000/api/main/latest-sensors");
         const data = await res.json();
         const formatted = (data as SensorRecord[]).reverse().map((d) => ({
           time: new Date(d.timestamp).toLocaleTimeString("vi-VN", {
@@ -129,7 +123,7 @@ const SensorChart = ({ sensorData }: Props) => {
           },
           {
             label: "☀️ Ánh sáng (Lux)",
-            yAxisID: "y1",
+            yAxisID: "z",
             data: [],
             borderColor: "#facc15",
             backgroundColor: "rgba(250,204,21,0.1)",
@@ -146,14 +140,13 @@ const SensorChart = ({ sensorData }: Props) => {
         animation: { duration: 500, easing: "easeOutQuart" },
         layout: {
           padding: {
-            bottom: 10, // 👈 thêm dòng này để chừa khoảng cho nhãn trục X
+            bottom: 10, // 👈 chừa khoảng cho nhãn trục X
           },
         },
         plugins: {
           legend: { display: false },
           title: {
             display: true,
-            text: "Biểu đồ cảm biến thời gian thực",
             color: "#e5e7eb",
             font: { size: 14 },
           },
@@ -180,7 +173,7 @@ const SensorChart = ({ sensorData }: Props) => {
               color: "#9ca3af",
             },
           },
-          y1: {
+          z: {
             position: "right",
             ticks: { color: "#facc15" },
             grid: { drawOnChartArea: false },
@@ -229,31 +222,31 @@ const SensorChart = ({ sensorData }: Props) => {
           onClick={() => toggleLine("temp")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
             visible.temp
-              ? "bg-red-500 text-white"
-              : "bg-gray-700 text-gray-400 line-through"
+              ? "bg-red-800 text-white hover:bg-red-600"
+              : "bg-gray-700 text-gray-400 line-through hover:bg-gray-600"
           }`}
         >
-          Nhiệt độ
+          🌡️ Nhiệt độ
         </button>
         <button
           onClick={() => toggleLine("humid")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
             visible.humid
-              ? "bg-blue-500 text-white"
-              : "bg-gray-700 text-gray-400 line-through"
+              ? "bg-blue-800 text-white hover:bg-blue-600"
+              : "bg-gray-700 text-gray-400 line-through hover:bg-gray-600"
           }`}
         >
-          Độ ẩm
+          💧 Độ ẩm
         </button>
         <button
           onClick={() => toggleLine("light")}
           className={`px-3 py-1.5 rounded-full text-xs font-medium transition ${
             visible.light
-              ? "bg-yellow-500 text-black"
-              : "bg-gray-700 text-gray-400 line-through"
+              ? "bg-yellow-600 text-black hover:bg-yellow-500"
+              : "bg-gray-700 text-gray-400 line-through hover:bg-gray-600"
           }`}
         >
-          Ánh sáng
+          ☀️ Ánh sáng
         </button>
       </div>
 

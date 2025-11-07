@@ -1,4 +1,3 @@
-// services/realtime.service.js
 export function initRealtime(io, mqttClient) {
   // MQTT → Socket.IO
   mqttClient.on("message", (topic, message) => {
