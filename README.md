@@ -34,7 +34,7 @@ IOT_Dashboard/
 │   ├── .env                      # Cấu hình môi trường (MQTT, Mongo URI, PORT)
 │   └── index.js                  # Chạy backend
 │
-├── frontend_iot/
+├── frontend/
 │   ├── src/
 │   │   ├── components/layout/    # Header, Sidebar, Layout chính
 │   │   ├── components/pages/     # Dashboard, Sensors, History, Profile
@@ -87,7 +87,7 @@ npm run dev
 ### 3️⃣ Frontend WebApp
 
 ```bash
-cd frontend_iot
+cd frontend
 npm i
 npm run dev
 ```
