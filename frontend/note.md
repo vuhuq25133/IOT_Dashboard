@@ -36,3 +36,16 @@ npm install chart.js
 npm install --save-dev @types/chart.js
 npm install react-icons
 ```
+
+# 5. cmd
+```
+cd ..
+cd .. 
+cd mosquitto
+// trỏ về thư mục chứa folder mosquitto
+mosquitto -v -c mosquitto.conf
+
+mosquitto_pub -h 172.20.10.7 -p 1883 -u iotuser -P iotpass -t "iot/fan" -m "on"
+mosquitto_pub -h 172.20.10.7 -p 1883 -u iotuser -P iotpass -t "iot/air" -m "on"
+mosquitto_pub -h 172.20.10.7 -p 1883 -u iotuser -P iotpass -t "iot/lamp" -m "on"
+```
